@@ -11,9 +11,9 @@ pipeline {
                 echo 'Hello!'
             }
         }
-        stage('List files') {
+        stage('[TruffleHog] Scan for secrets') {
             steps { 
-                sh 'ls'
+                sh 'trufflehog git file://.'
             }
         }
     }
