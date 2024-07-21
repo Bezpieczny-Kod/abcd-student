@@ -9,6 +9,7 @@ pipeline {
         stage('Example') {
             steps {
                 echo 'Hello!'
+                sh 'echo "$GIT_COMMIT"'
             }
         }
         stage('[TruffleHog] Scan for secrets') {
