@@ -13,7 +13,7 @@ pipeline {
         }
         stage('List files') {
             steps { 
-                ls
+                sh 'ls'
             }
         }
     }
