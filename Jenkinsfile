@@ -9,12 +9,11 @@ pipeline {
         stage('Example') {
             steps {
                 echo 'Hello!'
-                sh 'echo "$GIT_COMMIT"'
             }
         }
         stage('[TruffleHog] Scan for secrets') {
             steps { 
-                sh 'trufflehog git file://. --no-update'
+                sh 'trufflehog git file://. --since-commit main --branch HEAD --fail --no-update'
             }
         }
     }
