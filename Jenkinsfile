@@ -13,7 +13,7 @@ pipeline {
         }
         stage('[TruffleHog] Scan for secrets') {
             steps { 
-                sh 'trufflehog git file://.'
+                sh 'trufflehog git file://. --no-update'
             }
         }
     }
