@@ -34,7 +34,7 @@ pipeline {
                     sleep 5
                 '''
                 sh '''
-                    docker run --name zap --rm \
+                    docker run --name zap \
                         --add-host=host.docker.internal:host-gateway \
                         -v ${WORKSPACE}/:/zap/wrk/:rw \
                         -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \
@@ -71,6 +71,7 @@ pipeline {
                 engagementName: '${EMAIL}')
             sh '''
                 docker stop zap juice-shop
+                docker rm zap
             '''
         }
     }
