@@ -1,11 +1,11 @@
 services:
   sut:
-    build: ./test/smoke/
+    build: juice-shop/test/smoke/
     links:
       - app
 
   app:
     image: bkimminich/juice-shop:latest-amd64
-    build: ./
+    build: juice-shop/
     ports:
       - 3000:3000
