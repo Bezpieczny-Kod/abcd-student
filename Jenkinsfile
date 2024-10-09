@@ -2,7 +2,11 @@ pipeline {
     agent any
 
     environment {
-        WORKSPACE="/home/ubuntu/abcd-student/resources"
+        WORKSPACE='/home/ubuntu/abcd-student/resources'
+    }
+
+    parameters {
+        string(name: 'EMAIL', defaultValue: 'email@example.com', description: 'ABC-DevSecOps user email')
     }
 
     options {
@@ -45,25 +49,25 @@ pipeline {
                 '''
             }
         }
-        // stage('Upload raport to DefectDojo') {
-        //     post {
-        //         always {
-        //             defectDojoPublisher(artifact: '${WORKSPACE}/results/zap_xml_report.xml', 
-        //                 productName: 'Juice Shop', 
-        //                 scanType: 'ZAP Scan', 
-        //                 engagementName: 'change-me')
-        //         }
-        //     }
-        // }
+        
+        stage('Upload raport to DefectDojo') {
+            post {
+                always {
+                    echo 'Send report from: ${EMAIL}'
+                    // defectDojoPublisher(artifact: '${WORKSPACE}/reports/zap_xml_report.xml', 
+                    //     productName: 'Juice Shop', 
+                    //     scanType: 'ZAP Scan', 
+                    //     engagementName: '${EMAIL}')
+                }
+            }
+        }
     }
 
     post {
-
         always {
             sh '''
                 docker stop zap juice-shop
             '''
         }
-
     }
 }
