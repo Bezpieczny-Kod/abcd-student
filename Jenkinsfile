@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        WORKSPACE="/path/to/workspace"
+        WORKSPACE="/home/ubuntu/abcd-student/resources"
     }
 
     options {
@@ -31,9 +31,13 @@ pipeline {
                 sh '''
                     docker run --name zap --rm \\
                         --add-host=host.docker.internal:host-gateway \\
-                        -v /path/to/dir/with/passive/scan/yaml:/zap/wrk/:rw
+                        -v ${WORKSPACE}/resources:/zap/wrk/:rw
                         -t ghcr.io/zaproxy/zaproxy:stable bash -c \\
-                        "zap.sh -cmd -addonupdate; zap.sh -cmd -addoninstall communityScripts -addoninstall pscanrulesAlpha -addoninstall pscanrulesBeta -autorun /zap/wrk/passive_scan.yaml" \\
+                        "zap.sh -cmd -addonupdate \
+                        && zap.sh -cmd -addoninstall communityScripts \
+                        -addoninstall pscanrulesAlpha \
+                        -addoninstall pscanrulesBeta \
+                        -autorun /zap/wrk/passive_scan.yaml" \\
                         || true
                 '''
             }
@@ -41,23 +45,23 @@ pipeline {
             post {
                 always {
                     sh '''
-                        docker cp zap:/zap/wrk/zap_html_report.html ${WORKSPACE}/results/zap_html_report.html
-                        docker cp zap:/zap/wrk/zap_xml_report.xml ${WORKSPACE}/results/zap_xml_report.xml
+                        docker cp zap:/zap/wrk/zap_html_report.html ${WORKSPACE}/resources/reports/zap_html_report.html
+                        docker cp zap:/zap/wrk/zap_xml_report.xml ${WORKSPACE}/resources/reports/zap_xml_report.xml
                         docker stop zap juice-shop
                     '''
                 }
             }
         }
 
-        stage('Upload raport to DefectDojo') {
-            post {
-                always {
-                    defectDojoPublisher(artifact: '${WORKSPACE}/results/zap_xml_report.xml', 
-                        productName: 'Juice Shop', 
-                        scanType: 'ZAP Scan', 
-                        engagementName: 'change-me')
-                }
-            }
-        }
+        // stage('Upload raport to DefectDojo') {
+        //     post {
+        //         always {
+        //             defectDojoPublisher(artifact: '${WORKSPACE}/results/zap_xml_report.xml', 
+        //                 productName: 'Juice Shop', 
+        //                 scanType: 'ZAP Scan', 
+        //                 engagementName: 'change-me')
+        //         }
+        //     }
+        // }
     }
 }
