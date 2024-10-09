@@ -60,16 +60,18 @@ pipeline {
             }
         }
 
-   }
-
-    post {
-        always {
+        stage('[ZAP] Upload report to Defect Dojo') {
             echo 'Send report from: ${EMAIL}'
             defectDojoPublisher(artifact: '${REPORT_DIR}/zap_xml_report.xml', 
                 productName: 'Juice Shop', 
                 scanType: 'ZAP Scan', 
-                engagementName: '${EMAIL}')
-            sh '''
+                engagementName: '${EMAIL}') 
+        }
+   }
+
+    post {
+        always {
+           sh '''
                 docker stop zap juice-shop
                 docker rm zap
             '''
