@@ -4,7 +4,7 @@ pipeline {
         skipDefaultCheckout(true)
     }
     stages {
-        stage('Code checkout from GitHub') {
+        stage('Code checkout from GitHub main') {
             steps {
                 script {
                     cleanWs()
@@ -14,7 +14,7 @@ pipeline {
         }
         stage('Example') {
             steps {
-                echo 'Hello!'
+                echo 'Hello!!'
                 sh 'ls -la'
             }
         }
