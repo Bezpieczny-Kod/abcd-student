@@ -36,6 +36,7 @@ pipeline {
                     docker run --name zap --rm \\
                         --add-host=host.docker.internal:host-gateway \\
                         -v ${WORKSPACE}/:/zap/wrk/:rw \\
+                        -v ${WORKSPACE}/reports/:/zap/wrk/reports:rw \\
                         -t ghcr.io/zaproxy/zaproxy:stable bash -c \\
                         "zap.sh -cmd -addonupdate \\
                         && zap.sh -cmd -addoninstall communityScripts \\
@@ -43,28 +44,20 @@ pipeline {
                         -addoninstall pscanrulesBeta \\
                         -autorun /zap/wrk/passive_scan.yaml"
                 '''
-                sh '''
-                    docker cp zap:/zap/wrk/zap_html_report.html ${WORKSPACE}/reports/zap_html_report.html
-                    docker cp zap:/zap/wrk/zap_xml_report.xml ${WORKSPACE}/reports/zap_xml_report.xml
-                '''
             }
         }
-        
-        stage('Upload raport to DefectDojo') {
-            post {
-                always {
-                    echo 'Send report from: ${EMAIL}'
+   }
+
+    post {
+        always {
+           sh '''
+                ls ${WORKSPACE}/reports 
+            '''
+            echo 'Send report from: ${EMAIL}'
                     // defectDojoPublisher(artifact: '${WORKSPACE}/reports/zap_xml_report.xml', 
                     //     productName: 'Juice Shop', 
                     //     scanType: 'ZAP Scan', 
                     //     engagementName: '${EMAIL}')
-                }
-            }
-        }
-    }
-
-    post {
-        always {
             sh '''
                 docker stop zap juice-shop
             '''
