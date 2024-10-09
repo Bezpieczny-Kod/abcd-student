@@ -43,7 +43,7 @@ pipeline {
                         && zap.sh -cmd -addoninstall communityScripts \
                         -addoninstall pscanrulesAlpha \
                         -addoninstall pscanrulesBeta \
-                        -autorun /zap/wrk/passive_scan.yaml"
+                        -autorun /zap/wrk/active_scan.yaml"
                 '''
             }
         }
@@ -55,7 +55,7 @@ pipeline {
                 '''
 
                 sh '''
-                    docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${REPORT_DIR}/zap_xml_report.xml 
+                    docker cp zap:/zap/wrk/reports/zap_xml_report_active.xml ${REPORT_DIR}/zap_xml_report_active.xml 
                 '''
             }
         }
@@ -63,10 +63,10 @@ pipeline {
         stage('[ZAP] Upload report to Defect Dojo') {
             steps {
                 echo 'Send report from: ${EMAIL}'
-                defectDojoPublisher(artifact: '${REPORT_DIR}/zap_xml_report.xml', 
-                    productName: 'Juice Shop', 
-                    scanType: 'ZAP Scan', 
-                    engagementName: '${EMAIL}') 
+                // defectDojoPublisher(artifact: '${REPORT_DIR}/zap_xml_report.xml', 
+                //     productName: 'Juice Shop', 
+                //     scanType: 'ZAP Scan', 
+                //     engagementName: '${EMAIL}') 
             }
         }
    }

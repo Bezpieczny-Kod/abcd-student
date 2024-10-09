@@ -29,11 +29,25 @@ jobs:
     parameters:
       maxDuration: 5
 
+  - type: report
+    parameters:
+      template: traditional-html
+      reportDir: /zap/wrk/reports
+      reportFile: zap_html_report_passive
+      reportTitle: "ZAP Passive Scan Report"
+
+  - type: report
+    parameters:
+      template: traditional-xml
+      reportDir: /zap/wrk/reports
+      reportFile: zap_xml_report_passive
+      reportTitle: "ZAP Passive Scan Report"
+
   - type: activeScan
       
   - type: report
     parameters:
       template: traditional-html-plus
-      reportDir: /zap/wrk/reports/${REPORT_TITLE}
-      reportFile: ${REPORT_TITLE}
-      reportTitle: "ZAP Passive Scan Report"
+      reportDir: /zap/wrk/reports
+      reportFile: zap_html_report_active
+      reportTitle: "ZAP Active Scan Report"
