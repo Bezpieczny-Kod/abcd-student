@@ -36,7 +36,7 @@ pipeline {
                     docker run --name zap --rm \\
                         --add-host=host.docker.internal:host-gateway \\
                         -v ${WORKSPACE}/:/zap/wrk/:rw \\
-                        -v ${WORKSPACE}/reports/:/zap/wrk/reports:rw \\
+                        -v ${WORKSPACE}/reports/:/zap/wrk/reports/:rw \\
                         -t ghcr.io/zaproxy/zaproxy:stable bash -c \\
                         "zap.sh -cmd -addonupdate \\
                         && zap.sh -cmd -addoninstall communityScripts \\
@@ -50,14 +50,11 @@ pipeline {
 
     post {
         always {
-           sh '''
-                ls ${WORKSPACE}/reports 
-            '''
             echo 'Send report from: ${EMAIL}'
-                    // defectDojoPublisher(artifact: '${WORKSPACE}/reports/zap_xml_report.xml', 
-                    //     productName: 'Juice Shop', 
-                    //     scanType: 'ZAP Scan', 
-                    //     engagementName: '${EMAIL}')
+            defectDojoPublisher(artifact: '${WORKSPACE}/reports/zap_xml_report.xml', 
+                productName: 'Juice Shop', 
+                scanType: 'ZAP Scan', 
+                engagementName: '${EMAIL}')
             sh '''
                 docker stop zap juice-shop
             '''
