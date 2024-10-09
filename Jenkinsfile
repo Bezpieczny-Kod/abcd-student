@@ -55,17 +55,19 @@ pipeline {
                 '''
 
                 sh '''
-                    docker cp zap:/zap/wrk/zap_xml_report.xml ${REPORT_DIR}/zap_xml_report.xml 
+                    docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${REPORT_DIR}/zap_xml_report.xml 
                 '''
             }
         }
 
         stage('[ZAP] Upload report to Defect Dojo') {
-            echo 'Send report from: ${EMAIL}'
-            defectDojoPublisher(artifact: '${REPORT_DIR}/zap_xml_report.xml', 
-                productName: 'Juice Shop', 
-                scanType: 'ZAP Scan', 
-                engagementName: '${EMAIL}') 
+            steps {
+                echo 'Send report from: ${EMAIL}'
+                defectDojoPublisher(artifact: '${REPORT_DIR}/zap_xml_report.xml', 
+                    productName: 'Juice Shop', 
+                    scanType: 'ZAP Scan', 
+                    engagementName: '${EMAIL}') 
+            }
         }
    }
 
