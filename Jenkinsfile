@@ -62,7 +62,9 @@ pipeline {
 
         stage('[ZAP] Upload report to Defect Dojo') {
             steps {
-                echo 'Send report from:' ${EMAIL}
+                sh '''
+                    echo Send report from: ${EMAIL}
+                '''
                 // defectDojoPublisher(artifact: '${REPORT_DIR}/zap_xml_report.xml', 
                 //     productName: 'Juice Shop', 
                 //     scanType: 'ZAP Scan', 
