@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         WORKSPACE='/home/ubuntu/abcd-student/resources'
-        REPORT_DIR='/scan/reports'
-        REPORT_NAME=''
+        REPORT_DIR='results'
     }
 
     parameters {
@@ -51,18 +50,15 @@ pipeline {
 
         stage('[ZAP] Prepare reports space') {
             steps {
-                script {
-                    env.REPORT_NAME = "report_${sh(script: 'date +%s', returnStdout: true).trim()}"
-                }
                 sh '''
-                    mkdir -p ${REPORT_DIR}/${REPORT_NAME}
+                    mkdir ${REPORT_DIR}
                 '''
             }
         }
         stage('[ZAP] Copy scan result') {
             steps {
                 sh '''
-                    docker cp zap:/zap/wrk/reports ${REPORT_DIR}/{REPORT_NAME}
+                    docker cp zap:/zap/wrk/reports ${REPORT_DIR}/
                 '''
             }
         }
@@ -70,11 +66,11 @@ pipeline {
         stage('[ZAP] Upload report to Defect Dojo') {
             steps {
                 echo 'Archiving results...'
-                archiveArtifacts artifacts: '${REPORT_DIR}/{REPORT_NAME}/**/*', fingerprint: true, allowEmptyArchive: true
+                archiveArtifacts artifacts: 'results/**/*', fingerprint: true, allowEmptyArchive: true
                 sh '''
                     echo Send report to DefectDojo from: ${EMAIL}
                 '''
-                defectDojoPublisher(artifact: '${REPORT_DIR}/{REPORT_NAME}/zap_report.xml', 
+                defectDojoPublisher(artifact: '${REPORT_DIR}/reports/zap_report.xml', 
                     productName: 'Juice Shop', 
                     scanType: 'ZAP Scan', 
                     engagementName: '${EMAIL}') 
