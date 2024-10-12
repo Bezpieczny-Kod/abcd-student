@@ -29,9 +29,9 @@ jobs:
     parameters:
       maxDuration: 5
 
-  - type: exec
-    parameters:
-      command: mkdir -p /zap/wrk/reports
+#  - type: exec
+#    parameters:
+#      command: mkdir -p /zap/wrk/reports
       
   - type: report
     parameters:
