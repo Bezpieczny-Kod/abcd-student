@@ -28,6 +28,10 @@ jobs:
   - type: passiveScan-wait
     parameters:
       maxDuration: 5
+
+  - type: exec
+    parameters:
+      command: mkdir -p /zap/wrk/reports
       
   - type: report
     parameters:
