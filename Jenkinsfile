@@ -12,12 +12,12 @@ pipeline {
                 }
             }
         }
-        stage('Example') {
-            steps {
-                echo 'Hello!!'
-                sh 'ls -la'
-            }
-        }
+//         stage('Example') {
+//             steps {
+//                 echo 'Hello!!'
+//                 sh 'ls -la'
+//             }
+//         }
         stage('[ZAP] Baseline passive-scan') {
             steps {
                 sh '''
