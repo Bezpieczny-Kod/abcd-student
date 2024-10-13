@@ -15,7 +15,7 @@ pipeline {
         stage('Example') {
             steps {
                 echo 'Hello!!'
-                sh 'ls -la'
+                sh 'whoami'
             }
         }
 //         stage('[ZAP] Baseline passive-scan') {
