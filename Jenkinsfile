@@ -43,6 +43,10 @@ pipeline {
                         docker cp zap:/zap/wrk/zap_xml_report.xml ${WORKSPACE}/results/zap_xml_report.xml
                         docker stop zap juice-shop
                     '''
+                    defectDojoPublisher(artifact: 'results/zap_xml_report.xml',
+                       productName: 'Juice Shop',
+                       scanType: 'ZAP scan',
+                       engagementName: 'piotr.tyrala.mail@gmail.com')
                 }
             }
         }
