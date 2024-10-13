@@ -32,13 +32,13 @@ jobs:
   - type: report
     parameters:
       template: traditional-html
-      reportDir: /zap/wrk/reports
+      reportDir: /zap/wrk
       reportFile: zap_html_report
       reportTitle: "ZAP Passive Scan Report"
 
   - type: report
     parameters:
       template: traditional-xml
-      reportDir: /zap/wrk/reports
+      reportDir: /zap/wrk
       reportFile: zap_xml_report
       reportTitle: "ZAP Passive Scan Report"
