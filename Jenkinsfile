@@ -45,7 +45,7 @@ pipeline {
                     '''
                     defectDojoPublisher(artifact: 'results/zap_xml_report.xml',
                        productName: 'Juice Shop',
-                       scanType: 'ZAP scan',
+                       scanType: 'ZAP Scan',
                        engagementName: 'piotr.tyrala.mail@gmail.com')
                 }
             }
