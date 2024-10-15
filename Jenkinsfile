@@ -8,7 +8,7 @@ pipeline {
             steps {
                 script {
                     cleanWs()
-                    git credentialsId: 'github-student', url: 'https://github.com/tyriusz/abcd-student', branch: 'main'
+                    git credentialsId: 'github-student', url: 'https://github.com/tyriusz/abcd-student', branch: 'sca-scan'
                 }
             }
         }
@@ -18,8 +18,26 @@ pipeline {
                 sh 'whoami'
             }
         }
+        stage('[OSV-Scanner] Dependency scan') {
+            steps {
+                sh 'mkdir -p results/'
+                sh '''
+                    docker run --name osv-scanner \
+                        -v /c/Users/Piotrek/Documents/abcd-devsecops/working/abcd-student/.osv:/osv/wrk/:rw \
+                        -t ghcr.io/google/osv-scanner:latest \
+                         ghcr.io/google/osv-scanner:stable bash -c \
+                         --lockfile=package-lock.json
+                    '''
+            }
+            post {
+                always {
+                    echo 'OSV-Scanner finished.'
+                }
+            }
+        }
         stage('[ZAP] Baseline passive-scan') {
             steps {
+                sh 'mkdir -p results/'
                 sh '''
                     docker run --name juice-shop -d \
                         -p 3000:3000 \
@@ -37,7 +55,6 @@ pipeline {
             }
             post {
                 always {
-                    sh 'mkdir -p ${WORKSPACE}/results'
                     sh '''
                         docker cp zap:/zap/wrk/zap_html_report.html ${WORKSPACE}/results/zap_html_report.html
                         docker cp zap:/zap/wrk/zap_xml_report.xml ${WORKSPACE}/results/zap_xml_report.xml
