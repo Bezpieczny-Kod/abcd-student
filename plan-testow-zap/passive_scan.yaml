@@ -27,7 +27,7 @@ jobs:
 
   - type: passiveScan-wait
     parameters:
-      maxDuration: 5
+      maxDuration: 1
       
   - type: report
     parameters:
