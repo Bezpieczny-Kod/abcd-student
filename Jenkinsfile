@@ -34,16 +34,18 @@ pipeline {
                 echo 'ZAP Passive Scan'
                 sh 'mkdir -p /zap/wrk/reports/'
                 sh 'zap.sh -cmd -addonupdate'
-                sh 'zap.sh -cmd -addoninstall communityScripts -addoninstall pscanrulesAlpha -addoninstall pscanrulesBeta -autorun ${WORKSPACE}/plan-testow-zap/passive_scan.yaml'
+                sh '''
+                cat ${WORKSPACE}/plan-testow-zap/passive_scan.yaml
+                zap.sh -cmd -addoninstall communityScripts -addoninstall pscanrulesAlpha -addoninstall pscanrulesBeta -autorun ${WORKSPACE}/plan-testow-zap/passive_scan.yaml
+                '''
             }
         }
     }
     post {
         always {
             sh '''
-            mkdir ${WORKSPACE}/reports/
-            docker cp zap:/zap/wrk/reports/zap_html_report.html ${WORKSPACE}/reports/zap_html_report.html || true
-            docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${WORKSPACE}/reports/zap_xml_report.xml || true
+            ls -la /zap/wrk/reports/zap_html_report.html
+            ls -la /zap/wrk/reports/zap_xml_report.xml
             docker stop juice-shop || true
             docker rm juice-shop || true              
             '''
