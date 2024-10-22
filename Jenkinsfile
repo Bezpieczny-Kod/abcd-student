@@ -26,7 +26,8 @@ pipeline {
                 // Uruchomienie aplikacji juice-shop w kontenerze
                 sh '''
                     docker run --name juice-shop -d --rm -p 3000:3000 bkimminich/juice-shop
-                    sleep 10 // Zwiększono czas oczekiwania, by aplikacja mogła się w pełni załadować
+                    # Zwiększono czas oczekiwania, by aplikacja mogła się w pełni załadować
+                    sleep 10
                 '''
 
                 // Uruchomienie skanowania OWASP ZAP
@@ -34,7 +35,7 @@ pipeline {
                     docker run --name zap --rm \
                     -v ~/Documents/DevSecOps/Test:/zap/wrk/:rw \
                     ghcr.io/zaproxy/zaproxy:stable \
-                    bash -c "zap.sh -cmd -addonupdate; zap.sh -cmd -addoninstall communityScripts; zap.sh -cmd -addoninstall pscarulesBeta; zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
+                    bash -c "zap.sh -cmd -addonupdate; zap.sh -cmd -addoninstall communityScripts; zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
                 '''
             }
         }
