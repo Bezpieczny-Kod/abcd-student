@@ -1,3 +1,10 @@
+env:
+  contexts:
+    - name: test-context
+      urls:
+        - "http://host.docker.internal:3000/"
+      includePaths:
+        - "http://host.docker.internal:3000/.*"
 
   parameters:
     failOnError: true
@@ -16,9 +23,6 @@ jobs:
       scanOnlyInScope: true
 
   - type: spider
-
-  #- type: spiderAjax
-
   - type: passiveScan-wait
     parameters:
       maxDuration: 5
