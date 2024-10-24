@@ -9,7 +9,10 @@ pipeline {
             steps {
                 script {
                     cleanWs() // Czyszczenie workspace
-                    git credentialsId: 'github-pat', url: 'https://github.com/MariuszRudnik/abcd-student', branch: 'main'
+                    // Pobieranie całego kodu z repozytorium, w tym pliku passive.yaml
+                    checkout([$class: 'GitSCM',
+                              branches: [[name: 'main']],
+                              userRemoteConfigs: [[url: 'https://github.com/MariuszRudnik/abcd-student', credentialsId: 'github-pat']]])
                 }
             }
         }
@@ -21,10 +24,10 @@ pipeline {
             }
         }
 
-        stage('Check passive_scan.yaml exists in workspace') {
+        stage('Check passive.yaml exists in workspace') {
             steps {
-                // Sprawdzenie, czy plik passive_scan.yaml został pobrany z repozytorium i istnieje w workspace
-                sh 'ls -l ${WORKSPACE}/passive_scan.yaml'
+                // Sprawdzenie, czy plik passive.yaml został pobrany z repozytorium i istnieje w workspace
+                sh 'ls -l ${WORKSPACE}/passive.yaml'
             }
         }
 
@@ -46,7 +49,7 @@ pipeline {
                     -t ghcr.io/zaproxy/zaproxy:stable bash -c \
                     "zap.sh -cmd -addonupdate; \
                     zap.sh -cmd -addoninstall communityScripts -addoninstall pscanrulesAlpha -addoninstall pscanrulesBeta; \
-                    zap.sh -cmd -autorun /zap/wrk/passive_scan.yaml" || true
+                    zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
                 '''
             }
         }
