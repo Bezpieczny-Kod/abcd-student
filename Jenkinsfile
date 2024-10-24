@@ -41,15 +41,26 @@ pipeline {
                     fi
                 '''
 
-                // Uruchomienie kontenera ZAP z wymaganymi parametrami
+                // Uruchomienie kontenera ZAP
                 sh '''
-                    docker run --name zap \
+                    docker run --name zap -d \
                     --add-host=host.docker.internal:host-gateway \
                     -v ${WORKSPACE}/zap-results:/zap/wrk/:rw \
-                    -t ghcr.io/zaproxy/zaproxy:stable bash -c \
-                    "zap.sh -cmd -addonupdate; \
-                    zap.sh -cmd -addoninstall communityScripts -addoninstall pscanrulesAlpha -addoninstall pscanrulesBeta; \
-                    zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
+                    ghcr.io/zaproxy/zaproxy:stable zap.sh -daemon -port 8080
+                '''
+
+                // Kopiowanie pliku passive.yaml do kontenera ZAP
+                sh '''
+                    docker cp ${WORKSPACE}/passive.yaml zap:/zap/wrk/passive.yaml
+                '''
+
+                // Uruchomienie skanowania w ZAP z użyciem passive.yaml
+                sh '''
+                    docker exec zap zap.sh -cmd -addonupdate
+                    docker exec zap zap.sh -cmd -addoninstall communityScripts
+                    docker exec zap zap.sh -cmd -addoninstall pscanrulesAlpha
+                    docker exec zap zap.sh -cmd -addoninstall pscanrulesBeta
+                    docker exec zap zap.sh -cmd -autorun /zap/wrk/passive.yaml
                 '''
             }
         }
