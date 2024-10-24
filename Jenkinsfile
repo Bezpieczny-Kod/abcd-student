@@ -1,36 +1,53 @@
 pipeline {
     agent any
+    options {
+        skipDefaultCheckout(true) // Pomijanie domyślnego checkoutu
+    }
 
     stages {
-        stage('DAST') {
+        stage('Code checkout from GitHub') {
             steps {
-                // Uruchomienie aplikacji Juice Shop w kontenerze
-                sh '''
-                    docker run --name juice-shop -d --rm -p 3000:3000 bkimminich/juice-shop
-                    sleep 10
-                '''
+                script {
+                    cleanWs() // Czyszczenie workspace
+                    git credentialsId: 'github-pat', url: 'https://github.com/MariuszRudnik/abcd-student', branch: 'main'
+                }
+            }
+        }
 
-                // Uruchomienie skanowania OWASP ZAP
+        stage('Prepare') {
+            steps {
+                // Upewnienie się, że katalog results istnieje w workspace
+                sh 'mkdir -p ${WORKSPACE}/results'
+            }
+        }
+
+        stage('Check passive.yaml exists in workspace') {
+            steps {
+                // Sprawdzenie, czy plik passive.yaml istnieje w katalogu results
+                sh 'ls -l ${WORKSPACE}/results/passive.yaml'
+            }
+        }
+
+        stage('Verify mounting and file existence in container') {
+            steps {
+                // Sprawdzenie, czy passive.yaml jest poprawnie zamontowany w kontenerze ZAP
+                sh '''
+                    docker run --name zap --rm \
+                    -v ${WORKSPACE}/results:/zap/wrk/:rw \
+                    ghcr.io/zaproxy/zaproxy:stable \
+                    bash -c "ls -l /zap/wrk/passive.yaml"
+                '''
+            }
+        }
+
+        stage('DAST - OWASP ZAP scan') {
+            steps {
+                // Uruchomienie OWASP ZAP z plikiem passive.yaml
                 sh '''
                     docker run --name zap --rm \
                     -v ${WORKSPACE}/results:/zap/wrk/:rw \
                     ghcr.io/zaproxy/zaproxy:stable \
                     bash -c "zap.sh -cmd -addonupdate; zap.sh -cmd -addoninstall communityScripts; zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
-                '''
-
-                // Wyświetlenie logów kontenera ZAP (przydatne do debugowania)
-                sh '''
-                    docker logs zap || true
-                '''
-
-                // Listowanie plików w kontenerze ZAP, aby upewnić się, że raporty zostały wygenerowane
-                sh '''
-                    docker exec zap ls -l /zap/wrk/reports || true
-                '''
-
-                // Testowanie dostępu do adresu host.docker.internal
-                sh '''
-                    docker exec zap curl http://host.docker.internal:3000/ || true
                 '''
             }
         }
@@ -38,7 +55,6 @@ pipeline {
 
     post {
         always {
-            // Sprawdzenie, czy kontener zap istnieje przed próbą kopiowania
             script {
                 def zapContainerExists = sh(script: "docker ps -a --filter 'name=zap' --format '{{.Names}}'", returnStdout: true).trim()
                 if (zapContainerExists == "zap") {
@@ -57,7 +73,6 @@ pipeline {
                 docker stop zap juice-shop || true
             '''
 
-            // Sprawdzanie, czy raport ZAP XML istnieje
             script {
                 def reportExists = fileExists("${WORKSPACE}/results/zap_xml_report.xml")
                 if (reportExists) {
