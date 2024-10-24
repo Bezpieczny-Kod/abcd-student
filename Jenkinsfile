@@ -74,8 +74,13 @@ pipeline {
             }
         }
 
-        stage('Step 6: Archive Scan Results') {
+        stage('Step 6: Verify and Archive Scan Results') {
             steps {
+                echo "Verifying scan results..."
+                // Wyświetlenie zawartości katalogu, aby upewnić się, że pliki są generowane
+                sh '''
+                    ls -al ./zap-results/reports/
+                '''
                 echo "Archiving scan results..."
                 // Archiwizowanie wyników w Jenkinsie
                 archiveArtifacts artifacts: './zap-results/reports/**/*', fingerprint: true, allowEmptyArchive: true
