@@ -37,6 +37,11 @@ pipeline {
                     zap.sh -daemon -port 8080 || true
                 '''
 
+                // Stworzenie folderu /zap/wrk w kontenerze
+                sh '''
+                    docker exec zap mkdir -p /zap/wrk
+                '''
+
                 // Kopiowanie pliku passive.yaml do kontenera ZAP
                 sh '''
                     docker cp ${WORKSPACE}/passive.yaml zap:/zap/wrk/passive.yaml
