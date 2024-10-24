@@ -5,10 +5,10 @@ env:
         - "http://host.docker.internal:3000/"
       includePaths:
         - "http://host.docker.internal:3000/.*"
-      parameters:
-        failOnError: true
-        failOnWarning: false
-        progressToStdout: true
+  parameters:
+    failOnError: true
+    failOnWarning: false
+    progressToStdout: true
 
 jobs:
   - type: alertFilter
@@ -23,7 +23,7 @@ jobs:
 
   - type: spider
 
-  # - type: spiderAjax
+  - type: spiderAjax
 
   - type: passiveScan-wait
     parameters:
