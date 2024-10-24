@@ -30,8 +30,12 @@ pipeline {
             }
         }
 
-        stage('Step 3: Copy passive_scan.yaml File') {
+        stage('Step 3: Checkout Code and Copy passive_scan.yaml File') {
             steps {
+                echo "Checking out code from repository..."
+                // Pobranie kodu źródłowego z repozytorium
+                checkout scm
+
                 echo "Copying passive_scan.yaml file from repository to workspace..."
                 // Kopiowanie pliku passive_scan.yaml do zap-results
                 sh '''
