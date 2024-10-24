@@ -43,12 +43,23 @@ pipeline {
 
     post {
         always {
-            // Kopiowanie wyników skanowania OWASP ZAP do workspace
+            // Sprawdzenie, czy kontener zap istnieje przed próbą kopiowania
+            script {
+                def zapContainerExists = sh(script: "docker ps -a --filter 'name=zap' --format '{{.Names}}'", returnStdout: true).trim()
+                if (zapContainerExists == "zap") {
+                    // Kopiowanie wyników skanowania OWASP ZAP do workspace
+                    sh '''
+                        docker cp zap:/zap/wrk/reports/zap_html_report.html ${WORKSPACE}/results/zap_html_report.html || true
+                        docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${WORKSPACE}/results/zap_xml_report.xml || true
+                    '''
+                } else {
+                    echo "Kontener ZAP nie istnieje, raporty nie zostaną skopiowane."
+                }
+            }
+
+            // Zatrzymywanie i usuwanie kontenerów
             sh '''
-                docker cp zap:/zap/wrk/reports/zap_html_report.html ${WORKSPACE}/results/zap_html_report.html || true
-                docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${WORKSPACE}/results/zap_xml_report.xml || true
-                docker stop zap || true
-                docker stop juice-shop || true
+                docker stop zap juice-shop || true
             '''
 
             // Archiwizowanie wyników w Jenkinsie
