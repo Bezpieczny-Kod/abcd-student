@@ -21,6 +21,19 @@ pipeline {
             }
         }
 
+        stage('Prepare passive.yaml for ZAP') {
+            steps {
+                script {
+                    // Tworzenie katalogu /zap/wrk/ w kontenerze oraz kopiowanie pliku passive.yaml
+                    sh '''
+                        docker run --rm -v ${WORKSPACE}/results:/zap/wrk/:rw -v ${WORKSPACE}:/workspace/:ro \
+                        ghcr.io/zaproxy/zaproxy:stable \
+                        bash -c "mkdir -p /zap/wrk/ && cp /workspace/passive.yaml /zap/wrk/"
+                    '''
+                }
+            }
+        }
+
         stage('DAST') {
             steps {
                 // Uruchomienie aplikacji Juice Shop w kontenerze
