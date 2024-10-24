@@ -19,7 +19,7 @@ pipeline {
 
         stage('Prepare') {
             steps {
-                // Tworzenie katalogu results, aby mieć pewność, że istnieje
+                // Tworzenie katalogu zap-results, aby mieć pewność, że istnieje
                 sh 'mkdir -p ${WORKSPACE}/zap-results'
             }
         }
@@ -54,14 +54,20 @@ pipeline {
                     docker cp ${WORKSPACE}/passive.yaml zap:/zap/wrk/passive.yaml
                 '''
 
-                // Uruchomienie skanowania w ZAP z użyciem passive.yaml
-                sh '''
-                    docker exec zap zap.sh -cmd -addonupdate
-                    docker exec zap zap.sh -cmd -addoninstall communityScripts
-                    docker exec zap zap.sh -cmd -addoninstall pscanrulesAlpha
-                    docker exec zap zap.sh -cmd -addoninstall pscanrulesBeta
-                    docker exec zap zap.sh -cmd -autorun /zap/wrk/passive.yaml
-                '''
+                // Aktualizacja dodatków w ZAP
+                sh 'docker exec zap zap.sh -cmd -addonupdate'
+
+                // Instalacja dodatku communityScripts
+                sh 'docker exec zap zap.sh -cmd -addoninstall communityScripts'
+
+                // Instalacja dodatku pscanrulesAlpha
+                sh 'docker exec zap zap.sh -cmd -addoninstall pscanrulesAlpha'
+
+                // Instalacja dodatku pscanrulesBeta
+                sh 'docker exec zap zap.sh -cmd -addoninstall pscanrulesBeta'
+
+                // Uruchomienie skanowania OWASP ZAP z pliku passive.yaml
+                sh 'docker exec zap zap.sh -cmd -autorun /zap/wrk/passive.yaml'
             }
         }
     }
