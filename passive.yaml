@@ -23,7 +23,7 @@ jobs:
 
   - type: spider
 
-  - type: spiderAjax
+  #- type: spiderAjax
 
   - type: passiveScan-wait
     parameters:
