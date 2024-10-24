@@ -37,6 +37,7 @@ pipeline {
                 echo "Creating directory for scan results..."
                 sh '''
                     mkdir -p zap-results/reports
+                    chmod -R 777 zap-results/reports
                 '''
                 echo "Directory created. Waiting for 5 seconds..."
                 sleep(5)
@@ -72,6 +73,10 @@ pipeline {
                 sh 'ls -al zap-results/'
                 echo "Listing contents of zap-results/reports directory..."
                 sh 'ls -al zap-results/reports/'
+                
+                echo "Fetching ZAP container logs..."
+                sh 'docker logs zap'
+                
                 echo "OWASP ZAP scan complete. Waiting for 5 seconds..."
                 sleep(5)
             }
