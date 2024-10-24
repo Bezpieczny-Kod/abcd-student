@@ -5,69 +5,69 @@ pipeline {
     }
 
     stages {
-        stage('Code checkout from GitHub') {
+        stage('Step 1: Prepare Juice Shop Application for Testing') {
             steps {
                 script {
                     cleanWs() // Czyszczenie workspace
-                    // Pobieranie całego kodu z repozytorium, w tym pliku passive.yaml
-                    checkout([$class: 'GitSCM',
-                              branches: [[name: 'main']],
-                              userRemoteConfigs: [[url: 'https://github.com/MariuszRudnik/abcd-student', credentialsId: 'github-pat']]])
+                    echo "Starting Juice Shop application..."
+                    sh '''
+                        docker run --name juice-shop -d --rm -p 3000:3000 bkimminich/juice-shop
+                    '''
+                    echo "Juice Shop is running. Waiting for 5 seconds..."
+                    sleep(5) // Pauza 5 sekund
                 }
             }
         }
 
-        stage('Prepare') {
+        stage('Step 2: Prepare Directory for Scan Results') {
             steps {
-                // Tworzenie katalogu zap-results, aby mieć pewność, że istnieje
-                sh 'mkdir -p ${WORKSPACE}/zap-results'
-            }
-        }
-
-        stage('Check passive.yaml exists in workspace') {
-            steps {
-                // Sprawdzenie, czy plik passive.yaml został pobrany z repozytorium i istnieje w workspace
-                sh 'ls -l ${WORKSPACE}/passive.yaml'
-            }
-        }
-
-        stage('DAST - OWASP ZAP scan') {
-            steps {
-                // Sprawdzenie i usunięcie istniejącego kontenera "zap", jeśli istnieje
+                echo "Creating directory for scan results..."
                 sh '''
-                    if [ $(docker ps -a -q -f name=zap) ]; then
-                        docker stop zap || true
-                        docker rm zap || true
-                    fi
+                    mkdir -p ./zap-results/reports
                 '''
+                echo "Directory created. Waiting for 5 seconds..."
+                sleep(5) // Pauza 5 sekund
+            }
+        }
 
-                // Uruchomienie kontenera ZAP
+        stage('Step 3: Copy passive_scan.yaml File') {
+            steps {
+                echo "Copying passive_scan.yaml file from repository to workspace..."
+                // Kopiowanie pliku passive_scan.yaml do zap-results
                 sh '''
-                    docker run --name zap -d \
+                    cp ${WORKSPACE}/passive_scan.yaml ./zap-results/passive_scan.yaml
+                '''
+                echo "File copied. Waiting for 5 seconds..."
+                sleep(5) // Pauza 5 sekund
+            }
+        }
+
+        stage('Step 4: Run OWASP ZAP for Passive Scanning') {
+            steps {
+                echo "Starting OWASP ZAP container..."
+                sh '''
+                    docker run --name zap \
                     --add-host=host.docker.internal:host-gateway \
-                    -v ${WORKSPACE}/zap-results:/zap/wrk/:rw \
-                    ghcr.io/zaproxy/zaproxy:stable zap.sh -daemon -port 8080
+                    -v $(pwd)/zap-results:/zap/wrk/:rw \
+                    -t ghcr.io/zaproxy/zaproxy:stable bash -c \
+                    "zap.sh -cmd -addonupdate; \
+                    zap.sh -cmd -addoninstall communityScripts; \
+                    zap.sh -cmd -addoninstall pscanrulesAlpha; \
+                    zap.sh -cmd -addoninstall pscanrulesBeta; \
+                    zap.sh -cmd -autorun /zap/wrk/passive_scan.yaml" || true
                 '''
+                echo "OWASP ZAP scan complete. Waiting for 5 seconds..."
+                sleep(5) // Pauza 5 sekund
+            }
+        }
 
-                // Kopiowanie pliku passive.yaml do kontenera ZAP
-                sh '''
-                    docker cp ${WORKSPACE}/passive.yaml zap:/zap/wrk/passive.yaml
-                '''
-
-                // Aktualizacja dodatków w ZAP
-                sh 'docker exec zap zap.sh -cmd -addonupdate'
-
-                // Instalacja dodatku communityScripts
-                sh 'docker exec zap zap.sh -cmd -addoninstall communityScripts'
-
-                // Instalacja dodatku pscanrulesAlpha
-                sh 'docker exec zap zap.sh -cmd -addoninstall pscanrulesAlpha'
-
-                // Instalacja dodatku pscanrulesBeta
-                sh 'docker exec zap zap.sh -cmd -addoninstall pscanrulesBeta'
-
-                // Uruchomienie skanowania OWASP ZAP z pliku passive.yaml
-                sh 'docker exec zap zap.sh -cmd -autorun /zap/wrk/passive.yaml'
+        stage('Step 5: Archive Scan Results') {
+            steps {
+                echo "Archiving scan results..."
+                // Archiwizowanie wyników w Jenkinsie
+                archiveArtifacts artifacts: './zap-results/reports/**/*', fingerprint: true, allowEmptyArchive: true
+                echo "Scan results archived. Waiting for 5 seconds..."
+                sleep(5) // Pauza 5 sekund
             }
         }
     }
@@ -75,38 +75,23 @@ pipeline {
     post {
         always {
             script {
-                def zapContainerExists = sh(script: "docker ps -a --filter 'name=zap' --format '{{.Names}}'", returnStdout: true).trim()
-                if (zapContainerExists == "zap") {
-                    // Kopiowanie wyników skanowania OWASP ZAP do katalogu results
-                    sh '''
-                        docker cp zap:/zap/wrk/reports/zap_html_report.html ${WORKSPACE}/zap-results/zap_html_report.html || true
-                        docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${WORKSPACE}/zap-results/zap_xml_report.xml || true
-                    '''
-                } else {
-                    echo "Kontener ZAP nie istnieje, raporty nie zostaną skopiowane."
-                }
+                echo "Cleaning up Docker containers..."
+                sh '''
+                    docker stop zap juice-shop || true
+                    docker rm zap juice-shop || true
+                '''
+                echo "Containers stopped and removed."
+
+                echo "Sending ZAP XML report to DefectDojo..."
+                // Wysyłanie raportów do DefectDojo
+                defectDojoPublisher(artifact: './zap-results/reports/zap_xml_report.xml',
+                                    productName: 'Juice Shop',
+                                    scanType: 'ZAP Scan',
+                                    engagementName: 'mario360x@gmail.com')
             }
 
-            // Zatrzymywanie i usuwanie kontenerów
-            sh '''
-                docker stop zap juice-shop || true
-            '''
-
-            script {
-                def reportExists = fileExists("${WORKSPACE}/zap-results/zap_xml_report.xml")
-                if (reportExists) {
-                    // Archiwizowanie wyników w Jenkinsie
-                    archiveArtifacts artifacts: '${WORKSPACE}/zap-results/**/*', fingerprint: true, allowEmptyArchive: true
-
-                    // Wysyłanie raportów do DefectDojo
-                    defectDojoPublisher(artifact: '${WORKSPACE}/zap-results/zap_xml_report.xml',
-                                        productName: 'Juice Shop',
-                                        scanType: 'ZAP Scan',
-                                        engagementName: 'mario360x@gmail.com')
-                } else {
-                    echo "Raport ZAP XML nie został znaleziony, nie można go wysłać do DefectDojo."
-                }
-            }
+            // Archiwizowanie wyników w Jenkinsie
+            archiveArtifacts artifacts: './zap-results/**/*', fingerprint: true, allowEmptyArchive: true
         }
     }
 }
