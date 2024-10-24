@@ -1,32 +1,12 @@
 pipeline {
     agent any
-    options {
-        skipDefaultCheckout(true) // Pomijanie domyślnego checkoutu
-    }
 
     stages {
-        stage('Code checkout from GitHub') {
-            steps {
-                script {
-                    cleanWs() // Czyszczenie workspace
-                    git credentialsId: 'github-pat', url: 'https://github.com/MariuszRudnik/abcd-student', branch: 'main'
-                }
-            }
-        }
-
-        stage('Prepare') {
-            steps {
-                // Tworzenie folderu na wyniki w workspace
-                sh 'mkdir -p ${WORKSPACE}/results/'
-            }
-        }
-
         stage('DAST') {
             steps {
                 // Uruchomienie aplikacji Juice Shop w kontenerze
                 sh '''
                     docker run --name juice-shop -d --rm -p 3000:3000 bkimminich/juice-shop
-                    # Zwiększenie czasu oczekiwania, aby aplikacja mogła się w pełni załadować
                     sleep 10
                 '''
 
@@ -36,6 +16,21 @@ pipeline {
                     -v ${WORKSPACE}/results:/zap/wrk/:rw \
                     ghcr.io/zaproxy/zaproxy:stable \
                     bash -c "zap.sh -cmd -addonupdate; zap.sh -cmd -addoninstall communityScripts; zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
+                '''
+
+                // Wyświetlenie logów kontenera ZAP (przydatne do debugowania)
+                sh '''
+                    docker logs zap || true
+                '''
+
+                // Listowanie plików w kontenerze ZAP, aby upewnić się, że raporty zostały wygenerowane
+                sh '''
+                    docker exec zap ls -l /zap/wrk/reports || true
+                '''
+
+                // Testowanie dostępu do adresu host.docker.internal
+                sh '''
+                    docker exec zap curl http://host.docker.internal:3000/ || true
                 '''
             }
         }
