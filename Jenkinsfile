@@ -8,7 +8,7 @@ pipeline {
         stage('Code checkout from GitHub') {
             steps {
                 script {
-                    cleanWs() // Czyszczenie workspace, aby pipeline zaczynał w czystym stanie
+                    cleanWs() // Czyszczenie workspace
                     git credentialsId: 'github-pat', url: 'https://github.com/MariuszRudnik/abcd-student', branch: 'main'
                 }
             }
@@ -30,12 +30,23 @@ pipeline {
 
         stage('DAST - OWASP ZAP scan') {
             steps {
-                // Montowanie tylko pliku passive.yaml do katalogu w kontenerze OWASP ZAP
+                // Uruchomienie kontenera ZAP
                 sh '''
-                    docker run --name zap --rm \
-                    -v ${WORKSPACE}/passive.yaml:/zap/wrk/passive.yaml:ro \
+                    docker run --name zap -d \
                     ghcr.io/zaproxy/zaproxy:stable \
-                    bash -c "zap.sh -cmd -addonupdate; zap.sh -cmd -addoninstall communityScripts; zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
+                    zap.sh -daemon -port 8080 || true
+                '''
+
+                // Kopiowanie pliku passive.yaml do kontenera ZAP
+                sh '''
+                    docker cp ${WORKSPACE}/passive.yaml zap:/zap/wrk/passive.yaml
+                '''
+
+                // Uruchomienie skanowania w ZAP z użyciem passive.yaml
+                sh '''
+                    docker exec zap zap.sh -cmd -addonupdate
+                    docker exec zap zap.sh -cmd -addoninstall communityScripts
+                    docker exec zap zap.sh -cmd -autorun /zap/wrk/passive.yaml
                 '''
             }
         }
