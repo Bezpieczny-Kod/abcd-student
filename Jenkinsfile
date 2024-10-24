@@ -62,14 +62,22 @@ pipeline {
                 docker stop zap juice-shop || true
             '''
 
-            // Archiwizowanie wyników w Jenkinsie
-            archiveArtifacts artifacts: '${WORKSPACE}/results/**/*', fingerprint: true, allowEmptyArchive: true
+            // Sprawdzanie, czy raport ZAP XML istnieje
+            script {
+                def reportExists = fileExists("${WORKSPACE}/results/zap_xml_report.xml")
+                if (reportExists) {
+                    // Archiwizowanie wyników w Jenkinsie
+                    archiveArtifacts artifacts: '${WORKSPACE}/results/**/*', fingerprint: true, allowEmptyArchive: true
 
-            // Wysyłanie raportów do DefectDojo
-            defectDojoPublisher(artifact: '${WORKSPACE}/results/zap_xml_report.xml',
-                                productName: 'Juice Shop',
-                                scanType: 'ZAP Scan',
-                                engagementName: 'mario360x@gmail.com')
+                    // Wysyłanie raportów do DefectDojo
+                    defectDojoPublisher(artifact: '${WORKSPACE}/results/zap_xml_report.xml',
+                                        productName: 'Juice Shop',
+                                        scanType: 'ZAP Scan',
+                                        engagementName: 'mario360x@gmail.com')
+                } else {
+                    echo "Raport ZAP XML nie został znaleziony, nie można go wysłać do DefectDojo."
+                }
+            }
         }
     }
 }
