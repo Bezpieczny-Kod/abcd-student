@@ -9,6 +9,7 @@ pipeline {
             steps {
                 script {
                     cleanWs() // Czyszczenie workspace
+                    // Pobranie kodu z repozytorium GitHub
                     git credentialsId: 'github-pat', url: 'https://github.com/MariuszRudnik/abcd-student', branch: 'main'
                 }
             }
@@ -21,17 +22,23 @@ pipeline {
             }
         }
 
-        stage('Prepare passive.yaml for ZAP') {
+        stage('Copy passive.yaml to workspace') {
             steps {
                 script {
-                    // Sprawdzenie, czy plik passive.yaml istnieje
+                    // Sprawdzenie, czy plik passive.yaml istnieje w pobranym kodzie
                     sh '''
                         if [ ! -f ${WORKSPACE}/passive.yaml ]; then
-                            echo "Plik passive.yaml nie istnieje w workspace!"
+                            echo "Plik passive.yaml nie został znaleziony w repozytorium!"
                             exit 1
                         fi
                     '''
+                }
+            }
+        }
 
+        stage('Prepare passive.yaml for ZAP') {
+            steps {
+                script {
                     // Tworzenie katalogu /zap/wrk/ w kontenerze oraz kopiowanie pliku passive.yaml
                     sh '''
                         docker run --rm -v ${WORKSPACE}/results:/zap/wrk/:rw -v ${WORKSPACE}:/workspace/:ro \
