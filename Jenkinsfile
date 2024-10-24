@@ -17,41 +17,36 @@ pipeline {
         stage('Prepare') {
             steps {
                 // Tworzenie katalogu results, aby mieć pewność, że istnieje
-                sh 'mkdir -p ${WORKSPACE}/results'
+                sh 'mkdir -p ${WORKSPACE}/zap-results'
             }
         }
 
-        stage('Check passive.yaml exists in workspace') {
+        stage('Check passive_scan.yaml exists in workspace') {
             steps {
-                // Sprawdzenie, czy plik passive.yaml został pobrany z repozytorium i istnieje w workspace
-                sh 'ls -l ${WORKSPACE}/passive.yaml'
+                // Sprawdzenie, czy plik passive_scan.yaml został pobrany z repozytorium i istnieje w workspace
+                sh 'ls -l ${WORKSPACE}/passive_scan.yaml'
             }
         }
 
         stage('DAST - OWASP ZAP scan') {
             steps {
-                // Uruchomienie kontenera ZAP
+                // Sprawdzenie i usunięcie istniejącego kontenera "zap", jeśli istnieje
                 sh '''
-                    docker run --name zap -d \
-                    ghcr.io/zaproxy/zaproxy:stable \
-                    zap.sh -daemon -port 8080 || true
+                    if [ $(docker ps -a -q -f name=zap) ]; then
+                        docker stop zap || true
+                        docker rm zap || true
+                    fi
                 '''
 
-                // Stworzenie folderu /zap/wrk w kontenerze
+                // Uruchomienie kontenera ZAP z wymaganymi parametrami
                 sh '''
-                    docker exec zap mkdir -p /zap/wrk
-                '''
-
-                // Kopiowanie pliku passive.yaml do kontenera ZAP
-                sh '''
-                    docker cp ${WORKSPACE}/passive.yaml zap:/zap/wrk/passive.yaml
-                '''
-
-                // Uruchomienie skanowania w ZAP z użyciem passive.yaml
-                sh '''
-                    docker exec zap zap.sh -cmd -addonupdate
-                    docker exec zap zap.sh -cmd -addoninstall communityScripts
-                    docker exec zap zap.sh -cmd -autorun /zap/wrk/passive.yaml
+                    docker run --name zap \
+                    --add-host=host.docker.internal:host-gateway \
+                    -v ${WORKSPACE}/zap-results:/zap/wrk/:rw \
+                    -t ghcr.io/zaproxy/zaproxy:stable bash -c \
+                    "zap.sh -cmd -addonupdate; \
+                    zap.sh -cmd -addoninstall communityScripts -addoninstall pscanrulesAlpha -addoninstall pscanrulesBeta; \
+                    zap.sh -cmd -autorun /zap/wrk/passive_scan.yaml" || true
                 '''
             }
         }
@@ -64,8 +59,8 @@ pipeline {
                 if (zapContainerExists == "zap") {
                     // Kopiowanie wyników skanowania OWASP ZAP do katalogu results
                     sh '''
-                        docker cp zap:/zap/wrk/reports/zap_html_report.html ${WORKSPACE}/results/zap_html_report.html || true
-                        docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${WORKSPACE}/results/zap_xml_report.xml || true
+                        docker cp zap:/zap/wrk/reports/zap_html_report.html ${WORKSPACE}/zap-results/zap_html_report.html || true
+                        docker cp zap:/zap/wrk/reports/zap_xml_report.xml ${WORKSPACE}/zap-results/zap_xml_report.xml || true
                     '''
                 } else {
                     echo "Kontener ZAP nie istnieje, raporty nie zostaną skopiowane."
@@ -78,13 +73,13 @@ pipeline {
             '''
 
             script {
-                def reportExists = fileExists("${WORKSPACE}/results/zap_xml_report.xml")
+                def reportExists = fileExists("${WORKSPACE}/zap-results/zap_xml_report.xml")
                 if (reportExists) {
                     // Archiwizowanie wyników w Jenkinsie
-                    archiveArtifacts artifacts: '${WORKSPACE}/results/**/*', fingerprint: true, allowEmptyArchive: true
+                    archiveArtifacts artifacts: '${WORKSPACE}/zap-results/**/*', fingerprint: true, allowEmptyArchive: true
 
                     // Wysyłanie raportów do DefectDojo
-                    defectDojoPublisher(artifact: '${WORKSPACE}/results/zap_xml_report.xml',
+                    defectDojoPublisher(artifact: '${WORKSPACE}/zap-results/zap_xml_report.xml',
                                         productName: 'Juice Shop',
                                         scanType: 'ZAP Scan',
                                         engagementName: 'mario360x@gmail.com')
