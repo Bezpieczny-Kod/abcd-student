@@ -1,20 +1,20 @@
 pipeline {
     agent any
     options {
-        skipDefaultCheckout(true) // Pomijanie domyślnego checkoutu
+        skipDefaultCheckout(true)
     }
 
     stages {
         stage('Step 1: Code Checkout') {
             steps {
                 script {
-                    cleanWs() // Czyszczenie workspace
+                    cleanWs()
                     echo "Checking out code from GitHub repository..."
                     git credentialsId: 'github-pat', url: 'https://github.com/MariuszRudnik/abcd-student', branch: 'main'
                     echo "Code checked out. Listing workspace contents..."
-                    sh 'ls -al ${WORKSPACE}'  // Wyświetlenie zawartości katalogu roboczego
+                    sh 'ls -al ${WORKSPACE}'
                     echo "Waiting for 5 seconds..."
-                    sleep(5) // Pauza 5 sekund
+                    sleep(5)
                 }
             }
         }
@@ -27,7 +27,7 @@ pipeline {
                         docker run --name juice-shop -d --rm -p 3000:3000 bkimminich/juice-shop
                     '''
                     echo "Juice Shop is running. Waiting for 5 seconds..."
-                    sleep(5) // Pauza 5 sekund
+                    sleep(5)
                 }
             }
         }
@@ -36,22 +36,21 @@ pipeline {
             steps {
                 echo "Creating directory for scan results..."
                 sh '''
-                    mkdir -p ./zap-results/reports
+                    mkdir -p zap-results/reports
                 '''
                 echo "Directory created. Waiting for 5 seconds..."
-                sleep(5) // Pauza 5 sekund
+                sleep(5)
             }
         }
 
         stage('Step 4: Copy passive.yaml File') {
             steps {
                 echo "Copying passive.yaml file from repository to workspace..."
-                // Kopiowanie pliku passive.yaml do zap-results
                 sh '''
-                    cp ${WORKSPACE}/passive.yaml ./zap-results/passive.yaml
+                    cp ${WORKSPACE}/passive.yaml zap-results/passive.yaml
                 '''
                 echo "File copied. Waiting for 5 seconds..."
-                sleep(5) // Pauza 5 sekund
+                sleep(5)
             }
         }
 
@@ -69,23 +68,25 @@ pipeline {
                     zap.sh -cmd -addoninstall pscanrulesBeta; \
                     zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
                 '''
+                echo "Listing contents of zap-results directory..."
+                sh 'ls -al zap-results/'
+                echo "Listing contents of zap-results/reports directory..."
+                sh 'ls -al zap-results/reports/'
                 echo "OWASP ZAP scan complete. Waiting for 5 seconds..."
-                sleep(5) // Pauza 5 sekund
+                sleep(5)
             }
         }
 
         stage('Step 6: Verify and Archive Scan Results') {
             steps {
                 echo "Verifying scan results..."
-                // Wyświetlenie zawartości katalogu, aby upewnić się, że pliki są generowane
                 sh '''
-                    ls -al ./zap-results/reports/
+                    ls -al zap-results/reports/
                 '''
                 echo "Archiving scan results..."
-                // Archiwizowanie wyników w Jenkinsie
-                archiveArtifacts artifacts: './zap-results/reports/**/*', fingerprint: true, allowEmptyArchive: true
+                archiveArtifacts artifacts: 'zap-results/reports/**/*', fingerprint: true, allowEmptyArchive: true
                 echo "Scan results archived. Waiting for 5 seconds..."
-                sleep(5) // Pauza 5 sekund
+                sleep(5)
             }
         }
     }
@@ -101,9 +102,9 @@ pipeline {
                 echo "Containers stopped and removed."
 
                 echo "Checking if ZAP XML report exists..."
-                if (fileExists('./zap-results/reports/zap_xml_report.xml')) {
+                if (fileExists('zap-results/reports/zap_xml_report.xml')) {
                     echo "Sending ZAP XML report to DefectDojo..."
-                    defectDojoPublisher(artifact: './zap-results/reports/zap_xml_report.xml',
+                    defectDojoPublisher(artifact: 'zap-results/reports/zap_xml_report.xml',
                                         productName: 'Juice Shop',
                                         scanType: 'ZAP Scan',
                                         engagementName: 'mario360x@gmail.com')
@@ -112,8 +113,7 @@ pipeline {
                 }
             }
 
-            // Archiwizowanie wyników w Jenkinsie
-            archiveArtifacts artifacts: './zap-results/**/*', fingerprint: true, allowEmptyArchive: true
+            archiveArtifacts artifacts: 'zap-results/**/*', fingerprint: true, allowEmptyArchive: true
         }
     }
 }
