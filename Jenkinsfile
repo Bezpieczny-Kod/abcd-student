@@ -30,10 +30,10 @@ pipeline {
 
         stage('DAST - OWASP ZAP scan') {
             steps {
-                // Poprawione montowanie pliku passive.yaml do kontenera ZAP jako plik, a nie katalog
+                // Montowanie całego katalogu workspace, w którym znajduje się passive.yaml
                 sh '''
                     docker run --name zap --rm \
-                    -v ${WORKSPACE}/passive.yaml:/zap/wrk/passive.yaml:ro \
+                    -v ${WORKSPACE}:/zap/wrk/:rw \
                     ghcr.io/zaproxy/zaproxy:stable \
                     bash -c "zap.sh -cmd -addonupdate; zap.sh -cmd -addoninstall communityScripts; zap.sh -cmd -autorun /zap/wrk/passive.yaml" || true
                 '''
