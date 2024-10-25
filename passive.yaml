@@ -7,10 +7,10 @@
 - type: report
   parameters:
     template: traditional-html
-    reportDir: /zap/wrk/reports
+    reportDir: /tmp/reports
     reportFile: zap_html_report.html
 - type: report
   parameters:
     template: traditional-xml
-    reportDir: /zap/wrk/reports
+    reportDir: /tmp/reports
     reportFile: zap_xml_report.xml
