@@ -46,10 +46,11 @@ pipeline {
 
         stage('Step 4: Copy passive.yaml File') {
             steps {
-                echo "Copying passive.yaml file from repository to workspace..."
-                // Kopiowanie pliku passive.yaml do zap-results
+                echo "Copying passive.yaml file to /tmp directory for ZAP access..."
+                // Kopiowanie pliku passive.yaml do /tmp
                 sh '''
                     cp ${WORKSPACE}/passive.yaml /tmp/passive.yaml
+                    chmod 777 /tmp/passive.yaml
                 '''
                 echo "File copied. Waiting for 5 seconds..."
                 sleep(5) // Pauza 5 sekund
