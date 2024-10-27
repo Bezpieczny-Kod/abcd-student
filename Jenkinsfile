@@ -108,4 +108,4 @@ pipeline {
             archiveArtifacts artifacts: '/tmp/reports/**/*', fingerprint: true, allowEmptyArchive: true
         }
     }
-}
+
