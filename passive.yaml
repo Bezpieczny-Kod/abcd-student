@@ -1,0 +1,16 @@
+- type: spider
+  parameters:
+    url: http://host.docker.internal:3000
+- type: passiveScan-wait
+  parameters:
+    maxDuration: 5
+- type: report
+  parameters:
+    template: traditional-html
+    reportDir: /tmp/reports
+    reportFile: zap_html_report.html
+- type: report
+  parameters:
+    template: traditional-xml
+    reportDir: /tmp/reports
+    reportFile: zap_xml_report.xml
