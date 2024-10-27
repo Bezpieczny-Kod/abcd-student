@@ -5,7 +5,7 @@ pipeline {
     }
 
     stages {
-        stage('Step 1: Code Checkout') {
+        stage('Step 1: Code checkout for GitHub') {
             steps {
                 script {
                     cleanWs() // Czyszczenie workspace
@@ -19,22 +19,16 @@ pipeline {
             }
         }
 
-        stage('Step 2: Prepare Juice Shop Application for Testing') {
-            steps {
-                script {
-                    echo "Starting Juice Shop application..."
-                    sh '''
-                        docker run --name juice-shop -d --rm -p 3000:3000 bkimminich/juice-shop
-                    '''
-                    echo "Juice Shop is running. Waiting for 5 seconds..."
-                    sleep(5) // Pauza 5 sekund
-                }
+        stage('Step 2: Prepare') {
+            steps{
+                sh 'mkdir -p results'
+            }
             }
         }
 
-        stage('Step 3: Prepare Directory for Scan Results') {
+        stage('Step 3: Dast') {
             steps {
-                echo "Creating directory for scan results..."
+        
                 sh '''
                     mkdir -p /tmp/reports
                     chmod -R 777 /tmp/reports
@@ -46,11 +40,10 @@ pipeline {
 
         stage('Step 4: Copy passive.yaml File') {
             steps {
-                echo "Copying passive.yaml file to /tmp directory for ZAP access..."
-                // Kopiowanie pliku passive.yaml do /tmp
+                echo "Copying passive.yaml file from repository to workspace..."
+                // Kopiowanie pliku passive.yaml do zap-results
                 sh '''
-                    cp ${WORKSPACE}/passive.yaml /tmp/passive.yaml
-                    chmod 777 /tmp/passive.yaml
+                    cp ${WORKSPACE}/passive.yaml ./zap-results/passive.yaml
                 '''
                 echo "File copied. Waiting for 5 seconds..."
                 sleep(5) // Pauza 5 sekund
@@ -76,7 +69,7 @@ pipeline {
             }
         }
 
-        stage('Step 6: Verify and Archive Scan Results') {
+        stage('Step 6: Archive Scan Results') {
             steps {
                 echo "Verifying scan results..."
                 sh 'ls -al /tmp/reports' // Sprawdzanie zawartości katalogu z wynikami
@@ -100,9 +93,9 @@ pipeline {
                 echo "Containers stopped and removed."
 
                 echo "Checking if ZAP XML report exists..."
-                if (fileExists('/tmp/reports/zap_xml_report.xml')) {
+                if (fileExists('./zap-results/reports/zap_xml_report.xml')) {
                     echo "Sending ZAP XML report to DefectDojo..."
-                    defectDojoPublisher(artifact: '/tmp/reports/zap_xml_report.xml',
+                    defectDojoPublisher(artifact: './zap-results/reports/zap_xml_report.xml',
                                         productName: 'Juice Shop',
                                         scanType: 'ZAP Scan',
                                         engagementName: 'mario360x@gmail.com')
